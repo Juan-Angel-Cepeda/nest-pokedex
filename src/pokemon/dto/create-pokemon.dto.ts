@@ -7,7 +7,6 @@ export class CreatePokemonDto {
     @Min(1)
     no: number;
 
-
     @IsString()
     @MinLength(1)
     name: string;

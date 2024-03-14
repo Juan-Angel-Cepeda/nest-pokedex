@@ -4,12 +4,10 @@ import { Model, isValidObjectId } from 'mongoose';
 import { CreatePokemonDto } from './dto/create-pokemon.dto';
 import { UpdatePokemonDto } from './dto/update-pokemon.dto';
 import { Pokemon } from './entities/pokemon.entity';
-import { isString } from 'class-validator';
 
 
 @Injectable()
 export class PokemonService {
-  
   constructor(
     @InjectModel( Pokemon.name )
     private readonly pokemonModel: Model<Pokemon>
@@ -23,12 +21,7 @@ export class PokemonService {
       return pokemon;
     }
     catch(error){
-      
-      if (error.code === 11000){
-        throw new BadRequestException(`Pokemon exists in db ${JSON.stringify(error.keyValue)}`);
-      }
-      console.log(error)
-      throw new InternalServerErrorException('Cant create Pokemon - Check server logs')
+      this.handleExceptions(error);
     }
     
   }
@@ -40,13 +33,14 @@ export class PokemonService {
 
   async findOne(term: string) {
     let pokemon: Pokemon;
+    
     //verificación por id
     if (!isNaN(+term)){
       pokemon = await this.pokemonModel.findOne({no:term});
     }
     
     //verificación por uuid
-    if ( isValidObjectId(term)){
+    if ( !pokemon && isValidObjectId(term)){
       pokemon = await this.pokemonModel.findById(term);
     }
   
@@ -55,16 +49,40 @@ export class PokemonService {
       term = term.toLowerCase()
       pokemon = await this.pokemonModel.findOne({name:term});
     }
+    
     if (!pokemon ) throw new NotFoundException('Pokemon not found in database');
     return pokemon;
   
   }
 
-  update(id: number, updatePokemonDto: UpdatePokemonDto) {
-    return `This action updates a #${id} pokemon`;
+  async update(term: string, updatePokemonDto: UpdatePokemonDto) {
+    
+    const pokemon = await this.findOne(term);
+      if (updatePokemonDto.name )
+      updatePokemonDto.name = updatePokemonDto.name.toLowerCase();
+    
+    try {
+    
+      await pokemon.updateOne(updatePokemonDto,{new:true})
+      return { ...pokemon.toJSON(),...updatePokemonDto};
+    
+    } catch (error){
+      this.handleExceptions(error);
+    }
+    
   }
 
   remove(id: number) {
     return `This action removes a #${id} pokemon`;
   }
+
+
+  private handleExceptions(error:any){
+    if (error.code === 11000){
+      throw new BadRequestException(`Pokemon exists in db ${JSON.stringify(error.keyValue)}`);
+    }
+    console.log(error);
+    throw new InternalServerErrorException('Cant create Pokemon - Check server logs');
+  }
+
 }
