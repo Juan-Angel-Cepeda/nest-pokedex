@@ -44,6 +44,13 @@ $ yarn run start:dev
 # production mode
 $ yarn run start:prod
 ```
+## Environmet Variables
+Clone file __.env.template__ y renombrar a __.env__
+Fill your environment variables in __.env__
+
+## Rebuild Data
+
+
 
 ## Test
 
