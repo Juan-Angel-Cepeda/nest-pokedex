@@ -1,25 +1,42 @@
-#imates de node con caracteristicas minimas
-FROM node:18-alpine3.15
 
-#haciendo set up del directorio de trabajo
-RUN mkdir -p /var/www/pokedex
-WORKDIR /var/www/pokedex
+#crea una imagen con las dependencias
+#reinstala las dependencias y las deja en cache dependiendo de 
+#si las dependencias de nodes ya estan instaladas
+FROM node:18-alpine3.15 AS deps
 
-#Copiar el directorio de su contenido
-COPY . ./var/www/pokedex
-COPY package.json tsconfig.json tsconfig.build.json /var/www/pokedex/
-RUN yarn install
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+COPY package.json yarn.lock ./
+RUN yarn istall --frozen-lockfile
+
+#Copia de las dependecias al contenedor de la aplicación
+#
+FROM node:18-alpine3.15 AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 RUN yarn build
 
-#Permisos para ejecutar la aplicación
-RUN adduser --disabed_password pokeuser
-RUN chown -R pokeuser:pokeuser /var/www/pokedex
-USER pokedex
+#Imagen de producción
+FROM node:18-alpine3.15 AS runner
 
-#limpiar el cache
-RUN yarn cache clean --force
+#set working directory
+WORKDIR /usr/src/app
+COPY package.json yarn.lock ./
+RUN yarn install --prod
 
-#expone el puerto para la aplicación
-EXPOSE 3000
+COPY --from=builder /app/dist ./dist
 
-CMD ["yarn","start"]
+# #Copiar el directorio y su contenido
+# RUN mkdir -p ./pokedex
+
+# COPY --from=builder ./app/dist/ ./app
+# COPY ./.env ./app/.env
+
+# # Dar permiso para ejecutar la aplicación
+# RUN adduser --disabled-password pokeuser
+# RUN chown -R pokeuser:pokeuser ./pokedex
+# USER pokeuser
+# EXPOSE 3000
+
+CMD ["node", "dist/main"]
