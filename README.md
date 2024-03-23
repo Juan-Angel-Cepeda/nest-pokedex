@@ -75,6 +75,15 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 - Website - [https://nestjs.com](https://nestjs.com/)
 - Twitter - [@nestframework](https://twitter.com/nestframework)
 
+## Production Build
+1. Crear el archivo ```.env.prod```
+2. LLenar las variables de entorno de prod
+
+3. Crear la nueva imagen 
+  ```
+  docker-compse -f docker-compose.prod.yaml --env-file .env.prod up --build
+  ```
+
 ## License
 
 Nest is [MIT licensed](LICENSE).
